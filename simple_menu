@@ -1,0 +1,196 @@
+#!/usr/bin/env bash
+# This script displays a menu of options and prompts the user to enter a valid option.
+# The script will keep running until the user enters the exit option.
+
+
+function getValidSubject () {
+    local valid=False
+    while [ $valid == False ]
+    do
+        read -p "Please enter the subject of your message and press <enter>: " subj
+        if [ -z $subj ]; then
+            clear
+            echo -e "You must enter a subject!\n"
+        else
+            valid=True
+        fi
+    done
+}
+
+
+# The getValidUserName function prompts the user to enter a system username and validates that it exists.
+function getValidUserName () {
+    clear
+    local valid=False
+    while [ $valid == False ]
+    do
+        read -p "Please enter the email address of the recipient and hit <enter>: " reci
+        if awk -F: '{ print $1 }' /etc/passwd | grep -q $reci$ ; then
+            if [ -z $reci ]; then
+                clear
+                echo -e "You must enter a recipient!\n"
+            fi
+            valid=True
+        else
+            clear
+            echo -e "\n$reci does not exist. Try again."
+        fi
+    done
+}
+
+
+# The getValidFile function displays the working dirctory files and prompts the user to enter a file name.
+# When the user enters a valid file the function stops.
+function getValidFile () {
+    clear
+    local valid=False
+    while [ $valid == False ]
+    do
+        echo -e "Files in the Working Directory are:\n"
+        ls -l | grep '^-' | awk '{ print $9 }'
+        echo -e "\nEnter a absolute file path or a relative file name"
+        read -p ": " fileName
+        if [[ -f $fileName && -r $fileName ]]; then
+            valid=True
+        elif [[ -z "$fileName" ]]; then
+            valid=True
+        else
+            clear
+            echo -e "Can not find $fileName. Try again.\n"
+        fi
+    done
+}
+
+
+
+
+# The sendEmail function prompts the user to enter a subject line, a valid username, a message (optional), 
+# and a file to attach (optional) then sends a email using the mail utility
+function sendEmail () {
+    clear
+    echo -e "Welcome $USER"
+    echo -e "\nToday is: $(date)\n"
+    cal
+    echo -e "\nThis program will allow you to send a message, with a file attachment, to any selected user.\n"
+    getValidSubject
+    getValidUserName
+    getValidFile
+    if [ -z "$fileName" ]
+    then
+        mail -s "$subj" $reci
+    else
+        mail -s "$subj" $reci < $fileName
+    fi
+}
+
+
+# The getWebsiteIP function prompts the user to enter a domain name and displays the IPv4 and IPv6
+function getWebsiteIP () {
+    clear
+    local website
+    read -p "Enter a website: " website
+    clear
+    echo "The ip address for $website is $(dig +short $website)"
+}
+
+function pauseOutput () {
+    echo -e "\n"
+    read -n1 -p "Press any key to continue"
+}
+
+# The mainMenu function displays a list of menu options and prompts the user to enter a vaild option
+function mainMenu () {
+    declare -A menuOptions
+
+    menuOptions=(
+        ["a"]="Emailer Program"
+        ["b"]="Users Currently Logged On"
+        ["c"]="Current Date and Time"
+        ["d"]="This months Calendar"
+        ["e"]="Path of the Working Directory"
+        ["f"]="Contents of the Working Directory"
+        ["g"]="Find the IP of a Web Address"
+        ["h"]="See your Fortune"
+        ["i"]="Print a file (on the screen)"
+        ["j"]="Exit"
+    )
+    local answer
+    until [ $answer == "j" ]
+    do
+        clear
+        echo "--------------------"
+        echo "    COMMAND MENU    "
+        echo -e "--------------------\n"
+
+        for optionKey in "${!menuOptions[@]}"
+        do
+            echo "$optionKey. ${menuOptions[$optionKey]}"
+        done #| tac  << I needed this to output the menu in reveresed order on my local machine.:wq
+                # Without it the menu was in revrsed order..?
+
+        echo -e "\n"
+        read -n1 -p "Enter an option: " answer
+
+        if [ ${menuOptions[$answer]+_} ]; then
+            case "$answer" in
+                a)
+                    sendEmail
+                    ;;
+                b)
+                    clear
+                    echo -e "The users currently logged in are:\n"
+                    users | awk -F'[ ]' '{ for (i=1; i<=NF; i++) print $i }' | uniq | more
+                    ;;
+                c)
+                    clear
+                    echo -e "The current Date and Time is:\n"
+                    date
+                    ;;
+                d)
+                    clear
+                    echo -e "This months calendar:\n"
+                    cal
+                    ;;
+                e)
+                    clear
+                    echo -e "The name of the working directory is:\n"
+                    pwd
+                    ;;
+                f)
+                    clear
+                    echo -e "Contents of the Working Directory are:\n"
+                    ls -l | more
+                    ;;
+                g)
+                    clear
+                    getWebsiteIP
+                    ;;
+                h)
+                    clear
+                    echo -e "Your fortune is:\n"
+                    fortune
+                    ;;
+                i)
+                    clear
+                    getValidFile
+                    if [[ -z "$fileName" ]]; then
+                        echo "No File entered."
+                    else
+                        cat $fileName | more
+                    fi
+                    ;;
+                j)
+                    clear
+                    echo -e "Goodbye!"
+                    break
+
+            esac
+        pauseOutput
+        else
+            clear
+            echo -e "Not a valid menu option. Try again."
+            pauseOutput
+        fi
+    done
+}
+mainMenu
