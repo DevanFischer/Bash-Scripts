@@ -2,13 +2,13 @@
 # This script displays a menu of options and prompts the user to enter a valid option.
 # The script will keep running until the user enters the exit option.
 
-
+# NOTE: The getValidSubject reads input from the user and ensures its not a blank string
 function getValidSubject () {
     local valid=False
-    while [ $valid == False ]
+    while [[ $valid == False ]]
     do
         read -p "Please enter the subject of your message and press <enter>: " subj
-        if [ -z $subj ]; then
+        if [[ -z $subj ]]; then
             clear
             echo -e "You must enter a subject!\n"
         else
@@ -18,15 +18,15 @@ function getValidSubject () {
 }
 
 
-# The getValidUserName function prompts the user to enter a system username and validates that it exists.
+# NOTE: The getValidUserName function prompts the user to enter a system username and validates that it exists.
 function getValidUserName () {
     clear
     local valid=False
-    while [ $valid == False ]
+    while [[ $valid == False ]]
     do
         read -p "Please enter the email address of the recipient and hit <enter>: " reci
-        if awk -F: '{ print $1 }' /etc/passwd | grep -q $reci$ ; then
-            if [ -z $reci ]; then
+        if [ awk -F: '{ print $1 }' /etc/passwd | grep -q $reci$ ] ; then
+            if [[ -z $reci ]]; then
                 clear
                 echo -e "You must enter a recipient!\n"
             fi
@@ -39,12 +39,12 @@ function getValidUserName () {
 }
 
 
-# The getValidFile function displays the working dirctory files and prompts the user to enter a file name.
+# NOTE: The getValidFile function displays the working dirctory files and prompts the user to enter a file name.
 # When the user enters a valid file the function stops.
 function getValidFile () {
     clear
     local valid=False
-    while [ $valid == False ]
+    while [[ $valid == False ]]
     do
         echo -e "Files in the Working Directory are:\n"
         ls -l | grep '^-' | awk '{ print $9 }'
@@ -62,9 +62,7 @@ function getValidFile () {
 }
 
 
-
-
-# The sendEmail function prompts the user to enter a subject line, a valid username, a message (optional), 
+# NOTE: The sendEmail function prompts the user to enter a subject line, a valid username, a message (optional), 
 # and a file to attach (optional) then sends a email using the mail utility
 function sendEmail () {
     clear
@@ -75,7 +73,7 @@ function sendEmail () {
     getValidSubject
     getValidUserName
     getValidFile
-    if [ -z "$fileName" ]
+    if [[ -z "$fileName" ]]
     then
         mail -s "$subj" $reci
     else
@@ -84,7 +82,7 @@ function sendEmail () {
 }
 
 
-# The getWebsiteIP function prompts the user to enter a domain name and displays the IPv4 and IPv6
+# NOTE: The getWebsiteIP function prompts the user to enter a domain name and displays the IPv4 and IPv6
 function getWebsiteIP () {
     clear
     local website
@@ -93,12 +91,14 @@ function getWebsiteIP () {
     echo "The ip address for $website is $(dig +short $website)"
 }
 
+# NOTE: The pauseOutput function stops the script from continuing until the user presses a key
 function pauseOutput () {
     echo -e "\n"
     read -n1 -p "Press any key to continue"
 }
 
-# The mainMenu function displays a list of menu options and prompts the user to enter a vaild option
+
+# NOTE: The mainMenu function displays a list of menu options and prompts the user to enter a vaild option
 function mainMenu () {
     declare -A menuOptions
 
@@ -115,7 +115,7 @@ function mainMenu () {
         ["j"]="Exit"
     )
     local answer
-    until [ $answer == "j" ]
+    until [[ $answer == "j" ]]
     do
         clear
         echo "--------------------"
@@ -125,13 +125,13 @@ function mainMenu () {
         for optionKey in "${!menuOptions[@]}"
         do
             echo "$optionKey. ${menuOptions[$optionKey]}"
-        done #| tac  << I needed this to output the menu in reveresed order on my local machine.:wq
-                # Without it the menu was in revrsed order..?
+        done #| tac  << BUG: I needed this to output the menu in reveresed order on my local machine.:wq
+                # Without it the menu was in revrsed order..? TODO: Figure out why this is happening and handle it depending on the condition.
 
         echo -e "\n"
         read -n1 -p "Enter an option: " answer
 
-        if [ ${menuOptions[$answer]+_} ]; then
+        if [[ ${menuOptions[$answer]+_} ]]; then
             case "$answer" in
                 a)
                     sendEmail
