@@ -25,8 +25,7 @@ function getValidUserName () {
     while [[ $valid == False ]]
     do
         read -p "Please enter the email address of the recipient and hit <enter>: " reci
-        if [ awk -F: '{ print $1 }' /etc/passwd | grep -q $reci$ ] ; then
-            exit 1
+        if awk -F: '{ print $1 }' /etc/passwd | grep -q $reci$ ; then
             if [[ -z $reci ]]; then
                 clear
                 echo -e "You must enter a recipient!\n"
